@@ -1,0 +1,27 @@
+{
+  "name"        : "itxq/ip-php",
+  "description" : "IP地址解析工具类",
+  "type"        : "library",
+  "license"     : "Apache-2.0",
+  "authors"     : [
+    {
+      "name"    : "IT小强xqitw.cn",
+      "email"   : "mail@xqitw.cn",
+      "homepage": "https://www.xqitw.cn/"
+    }
+  ],
+  "require"     : {
+    "ext-iconv": "*",
+    "php"      : ">=7.1.0"
+  },
+  "autoload"    : {
+    "psr-4": {
+      "itxq\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "test\\": "test"
+    }
+  }
+}
