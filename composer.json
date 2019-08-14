@@ -1,6 +1,6 @@
 {
   "name"        : "itxq/ip-php",
-  "description" : "IP地址解析工具类",
+  "description" : "纯真IP地址解析类",
   "type"        : "library",
   "license"     : "Apache-2.0",
   "authors"     : [
