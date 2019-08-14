@@ -314,11 +314,8 @@ class IP
             case 0:
                 $area = '';
                 break; //没有地区信息
+            case 2:
             case 1: //地区被重定向
-                fseek($this->fh, $this->getLong3());
-                $area = $this->getInfo();
-                break;
-            case 2: //地区被重定向
                 fseek($this->fh, $this->getLong3());
                 $area = $this->getInfo();
                 break;
