@@ -12,6 +12,8 @@
 
 namespace itxq\util;
 
+use Exception;
+
 /**
  * IP地址解析工具类
  * Class IP
@@ -20,12 +22,20 @@ namespace itxq\util;
 class IP
 {
     public const  BEGIN = 'begin_ip';
+
     public const  END = 'end_ip';
-    public const  COUNTRY = 'country';
+
+    public const  ADDRESS = 'address';
+
     public const  AREA = 'area';
+
     public const  IP_INFO_ALL = 0;
+
     public const IP_INFO = 1;
+
     public const IP_RANGE = 2;
+
+
     /**
      * @var array - 查询结果
      */
@@ -91,7 +101,7 @@ class IP
         }
         try {
             $this->lookup($ip, $this->ipDataPath);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             var_dump(10086);
             return null;
         }
@@ -102,7 +112,7 @@ class IP
         if ($type === self::IP_INFO_ALL) {
             $info = $this->ipInfo;
         } else if ($type === self::IP_INFO) {
-            $info = $this->ipInfo[self::COUNTRY] . $this->ipInfo[self::AREA];
+            $info = $this->ipInfo[self::ADDRESS] . $this->ipInfo[self::AREA];
         } else if ($type === self::IP_RANGE) {
             $info = [$this->ipInfo[self::BEGIN], $this->ipInfo[self::END]];
         } else {
@@ -236,20 +246,24 @@ class IP
         while ($l <= $r) {
             $m = floor(($l + $r) / 2); //计算中间索引
             fseek($this->fh, $this->first + $m * 7);
-            $beginip = strrev(fread($this->fh, 4)); //中间索引的开始IP地址
+            $beginIp = strrev(fread($this->fh, 4)); //中间索引的开始IP地址
             fseek($this->fh, $this->getLong3());
-            $endip = strrev(fread($this->fh, 4)); //中间索引的结束IP地址
-            if ($ip < $beginip) { //用户的IP小于中间索引的开始IP地址时
+            $endIp = strrev(fread($this->fh, 4)); //中间索引的结束IP地址
+            if ($ip < $beginIp) { //用户的IP小于中间索引的开始IP地址时
                 $r = $m - 1;
-            } else if ($ip > $endip) { //用户的IP大于中间索引的结束IP地址时
+            } else if ($ip > $endIp) { //用户的IP大于中间索引的结束IP地址时
                 $l = $m + 1;
             } else { //用户IP在中间索引的IP范围内时
-                $findip = $this->first + $m * 7;
+                $findIp = $this->first + $m * 7;
                 break;
             }
         }
+        if (!isset($findIp)) {
+            $this->ipInfo = [];
+            return;
+        }
         //查询国家地区信息
-        fseek($this->fh, $findip);
+        fseek($this->fh, $findIp);
         $location[self::BEGIN] = long2ip($this->getLong4()); //用户IP所在范围的开始地址
         $offset                = $this->getLong3();
         fseek($this->fh, $offset);
@@ -257,30 +271,27 @@ class IP
         $byte                = fread($this->fh, 1); //标志字节
         switch (ord($byte)) {
             case 1:  //国家和区域信息都被重定向
-                $countryOffset = $this->getLong3(); //重定向地址
-                fseek($this->fh, $countryOffset);
+                $addressOffset = $this->getLong3(); //重定向地址
+                fseek($this->fh, $addressOffset);
                 $byte = fread($this->fh, 1); //标志字节
-                switch (ord($byte)) {
-                    case 2: //国家信息被二次重定向
-                        fseek($this->fh, $this->getLong3());
-                        $location[self::COUNTRY] = $this->getInfo();
-                        fseek($this->fh, $countryOffset + 4);
-                        $location[self::AREA] = $this->getArea();
-                        break;
-                    default: //国家信息没有被二次重定向
-                        $location[self::COUNTRY] = $this->getInfo($byte);
-                        $location[self::AREA]    = $this->getArea();
-                        break;
+                if (ord($byte) === 2) {
+                    fseek($this->fh, $this->getLong3());
+                    $location[self::ADDRESS] = $this->getInfo();
+                    fseek($this->fh, $addressOffset + 4);
+                    $location[self::AREA] = $this->getArea();
+                } else {
+                    $location[self::ADDRESS] = $this->getInfo($byte);
+                    $location[self::AREA]    = $this->getArea();
                 }
                 break;
             case 2: //国家信息被重定向
                 fseek($this->fh, $this->getLong3());
-                $location[self::COUNTRY] = $this->getInfo();
+                $location[self::ADDRESS] = $this->getInfo();
                 fseek($this->fh, $offset + 8);
                 $location[self::AREA] = $this->getArea();
                 break;
             default: //国家信息没有被重定向
-                $location[self::COUNTRY] = $this->getInfo($byte);
+                $location[self::ADDRESS] = $this->getInfo($byte);
                 $location[self::AREA]    = $this->getArea();
                 break;
         }
@@ -341,16 +352,22 @@ class IP
         return $data;
     }
 
+    /**
+     * 读取little-endian编码的4个字节转化为长整型数
+     * @return mixed
+     */
     protected function getLong4()
     {
-        //读取little-endian编码的4个字节转化为长整型数
         $result = unpack('Vlong', fread($this->fh, 4));
         return $result['long'];
     }
 
+    /**
+     * 读取little-endian编码的3个字节转化为长整型数
+     * @return mixed
+     */
     protected function getLong3()
     {
-        //读取little-endian编码的3个字节转化为长整型数
         $result = unpack('Vlong', fread($this->fh, 3) . chr(0));
         return $result['long'];
     }

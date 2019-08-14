@@ -43,7 +43,7 @@ $IP = new IP();
 //   string(8) "1.80.0.0"
 //     ["end_ip"]=>
 //   string(12) "1.80.155.255"
-//     ["country"]=>
+//     ["address"]=>
 //   string(18) "陕西省西安市"
 //     ["area"]=>
 //   string(6) "电信"
